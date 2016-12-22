@@ -1,6 +1,6 @@
 /*
  * CocoaBit as Kadecot GPIO device
- * 
+ *  MIT License. (C) 2016 Seigo Tanaka & Shigeru Owada
  *  Repository: https://github.com/SonyCSL/CocoaBitKadecot
  *  Japanese instructions : http://qiita.com/sgrowd/items/9ef56370a49f4f10c96c
  *
