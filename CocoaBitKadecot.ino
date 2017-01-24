@@ -16,11 +16,17 @@
 
 #define KADECOT_DEFAULT_SERIAL_PORT 41316
 
+int INPUT_ANALOG_PORT = A0;
 int OUTPUT_PORT = D3;
+
+void p(const char* str){ Nefry.print(str); }
+void pln(const char* str){ Nefry.println(str); }
+void p(String& str){ Nefry.print(str); }
+void pln(String& str){ Nefry.println(str); }
 
 // WriteMode ----------------------------------------------
 void WriteModeSetup() {
-  Nefry.println("Write Mode Setup");
+  pln("Write Mode Setup");
 }
 void WriteModeloop() {
   Nefry.setLed(random(250), random(255), random(255));
@@ -33,7 +39,7 @@ WebSocketsClient webSocket;
 
 int port;
 String ip;
-String consoleText;
+
 String recvStr = "" ;
 int sensorValue = -1;
 int sensorValuePrevious = 500;
@@ -73,16 +79,15 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
   
     switch(type) {
         case WStype_DISCONNECTED:
-              Nefry.println("[WSc] Disconnected!");
+              pln("Disconnected");
             break;
         case WStype_CONNECTED:
-              Nefry.println("[WSc] Connected to url: "+txt);
-              // send message to server when Connected
+              pln("Connected:"+txt);
+              // Kadecot format declaration of generic GPIO device over WebSocket/Socket
               sendSerial(String(Nefry.getModuleName())+"/in:0/out:0/mode:gpio") ;
             break;
         case WStype_TEXT:
-              Nefry.println("[WSc] get text: "+ txt );
-              // send message to server
+              //pln("text: "+ txt );
               int scp ;
               while( (scp = txt.indexOf(';')) >= 0 ){
                 onSerial(recvStr + txt.substring(0,scp)) ;
@@ -92,10 +97,8 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
               recvStr += txt ;
             break;
         case WStype_BIN:
-              Nefry.println("[WSc] get binary length:"+length);
+              //pln("Binary len:"+length);
               hexdump(payload, length);
-              // send data to server
-              // webSocket.sendBIN(payload, length);
             break;
     }
 
@@ -103,40 +106,38 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 
 void setup() {
     pinMode(OUTPUT_PORT, OUTPUT);
+    p("Booting");
     for(uint8_t t = 4; t > 0; t--) {
-        Nefry.println("[SETUP] BOOT WAIT :"+t);
-        delay(1000);
+      p(".");
+      delay(1000);
     }
+    pln("ok.");
     Nefry.setConfHtml("Kadecot IP",0);
-    Nefry.setConfHtml("Kadecot Port",KADECOT_DEFAULT_SERIAL_PORT);
+    //Nefry.setConfHtml("Kadecot Port",KADECOT_DEFAULT_SERIAL_PORT);
     ip=Nefry.getConfStr(0);
-    port=Nefry.getConfValue(0);
+    //port=Nefry.getConfValue(0);
     port=KADECOT_DEFAULT_SERIAL_PORT;
     webSocket.begin(ip.c_str (), port);
     webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
-    // consoleText = "{'message':'message send!','ip':'" + ip + "','port':" + String(port) + ",'module_name':'" + Nefry.getModuleName() + "','sensorValue':" + String(sensorValue) + "}";
-    sensorValue = analogRead(A0);//アナログの入力を読みます。
-    consoleText = String(Nefry.getModuleName()) + ":" + port +":" + String(sensorValue);
-    
-    //Nefry.print("sensorValue = " );
-    //Nefry.println(sensorValue);//センサーデータを表示します。
+    sensorValue = analogRead( INPUT_ANALOG_PORT);
+    //pln(sensorValue);
+    Nefry.ndelay(10) ;
+
 
     int spanValue = abs( sensorValuePrevious - sensorValue );
 
     // 値に大きく変化があったら
     if( spanValue > 50 ){
-      Nefry.print("consoleText = ");
-      Nefry.println(consoleText);
+      pln( String(Nefry.getModuleName()) + ":" + port +":" + String(sensorValue) );
+      Nefry.ndelay(10) ;
       sendSerial( String("pub:0:")+(sensorValue/1023.0f) ) ;
 
       sensorValuePrevious = sensorValue;
     }
-
-    
-    Nefry.ndelay(1000);
+    Nefry.ndelay(10);
 
     webSocket.loop();
 }
